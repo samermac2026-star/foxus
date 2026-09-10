@@ -1,4 +1,4 @@
-const CACHE = "foxus-v1";
+const CACHE = "foxus-v2";
 const SHELL = [
   "./",
   "./index.html",
@@ -24,6 +24,20 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+
+  if (e.request.mode === "navigate") {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+          return res;
+        })
+        .catch(() => caches.match(e.request).then((cached) => cached || caches.match("./index.html")))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then(
       (cached) =>

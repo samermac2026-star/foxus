@@ -126,6 +126,29 @@
   }
   .mascot.sm{width:42px;height:42px;}
   .mascot.lg{width:104px;height:104px;}
+
+  .mascot-full{
+    position:relative;overflow:hidden;border-radius:var(--radius);
+    background:var(--card);box-shadow:var(--shadow);
+    flex:none;aspect-ratio:1027/1089;
+  }
+  .mascot-full video{
+    position:absolute;width:116.75%;height:110.19%;max-width:none;left:-2.53%;top:-4.68%;
+    object-fit:cover;pointer-events:none;
+  }
+  .mascot-full.lg{width:168px;}
+  .mascot-full.float{width:104px;}
+
+  @keyframes mascotFloat{
+    0%,100%{transform:translateY(0) rotate(-1deg);}
+    50%{transform:translateY(-8px) rotate(1deg);}
+  }
+  .mascot-dock{
+    position:fixed;bottom:20px;right:18px;z-index:35;
+    animation:mascotFloat 3.6s ease-in-out infinite;
+    filter:drop-shadow(0 8px 16px rgba(43,27,18,.22));
+  }
+  @media (prefers-reduced-motion:reduce){.mascot-dock{animation:none;}}
   .icon-btn{
     width:40px;height:40px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
@@ -352,7 +375,7 @@
     </div>
     <div class="task-list" id="taskList"></div>
     <div class="empty" id="emptyState" hidden>
-      <div class="mascot lg"><video src="assets/fox-mascot.mp4" autoplay loop muted playsinline></video></div>
+      <div class="mascot-full lg" style="margin:0 auto;"><video src="assets/fox-mascot.mp4" autoplay loop muted playsinline></video></div>
       <h3>ما عندك مهام الآن</h3>
       <p>أضف أول مهمة وخلّنا نبدأ 🦊</p>
     </div>
@@ -370,6 +393,10 @@
 
   <div class="spacer-bottom"></div>
 </div>
+
+<button class="mascot-dock" id="mascotDock" aria-label="فوكسي">
+  <div class="mascot-full float"><video src="assets/fox-mascot.mp4" autoplay loop muted playsinline></video></div>
+</button>
 
 <button class="fab" id="fabAdd" aria-label="إضافة مهمة">
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>
@@ -435,6 +462,9 @@
       </div>
       <button class="ghost-btn" style="width:auto;margin:0;padding:9px 16px;font-size:13px;" id="enableNotifBtn">تفعيل</button>
     </div>
+    <div class="settings-item" style="display:block;">
+      <div class="t"><div class="d">💡 دايمًا بيطلع تنبيه داخل التطبيق فيه صوت واهتزاز حتى لو ما فعّلت إشعارات المتصفح — بس لازم يكون Foxus مفتوح بالمتصفح وقتها. تنبيهات المتصفح تضيف إشعار برّا التطبيق أيضًا.</div></div>
+    </div>
 
     <div class="settings-item" style="display:block;">
       <div class="t" style="margin-bottom:10px;">
@@ -487,7 +517,7 @@
 <!-- Onboarding -->
 <div class="onb" id="onboarding" hidden>
   <div class="onb-card">
-    <div class="mascot lg" style="margin:0 auto;"><video src="assets/fox-mascot.mp4" autoplay loop muted playsinline></video></div>
+    <div class="mascot-full lg" style="margin:0 auto;"><video src="assets/fox-mascot.mp4" autoplay loop muted playsinline></video></div>
     <h2>أهلًا! أنا فوكسي 🦊</h2>
     <p>بساعدك تنظّم مهامك وتتغلب على التسويف. أنا أرتب أولوياتك تلقائيًا، وكل ما استخدمت التطبيق، أتعلم أكثر عن وقتك المثالي وعاداتك.</p>
     <button class="primary-btn" id="onbStart">يلا نبدأ</button>
@@ -777,7 +807,7 @@
   }
 
   /* ---------------- toast ---------------- */
-  function toast(msg){
+  function toast(msg, duration){
     var wrap = document.getElementById('toastWrap');
     var el = document.createElement('div');
     el.className = 'toast';
@@ -787,7 +817,7 @@
     setTimeout(function(){
       el.classList.remove('show');
       setTimeout(function(){ el.remove(); }, 300);
-    }, 2400);
+    }, duration || 2400);
   }
 
   /* ---------------- overlays ---------------- */
@@ -828,6 +858,17 @@
   });
 
   document.getElementById('fabAdd').addEventListener('click', function(){ openOverlay('addOverlay'); });
+
+  var CHEERS = [
+    'يلا! خطوة وحدة بس وتخلص 💪',
+    'ما تسوّف، الحين أحسن وقت 🦊',
+    'فخور فيك، كمّل كذا!',
+    'مهمة صغيرة الحين توفر عليك تراكم بكرة',
+    'خذ نفس، وابدأ بأسهل وحدة'
+  ];
+  document.getElementById('mascotDock').addEventListener('click', function(){
+    toast(CHEERS[Math.floor(Math.random()*CHEERS.length)]);
+  });
 
   document.getElementById('taskForm').addEventListener('submit', function(e){
     e.preventDefault();
@@ -996,7 +1037,31 @@
     }
   });
 
+  var audioCtx = null;
+  function playChime(){
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+      var now = audioCtx.currentTime;
+      [880, 1175].forEach(function(freq, i){
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        var t0 = now + i*0.14;
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.18, t0 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.28);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(t0); osc.stop(t0 + 0.3);
+      });
+    }catch(e){}
+  }
+
   function notify(title, body){
+    playChime();
+    if(navigator.vibrate){ try{ navigator.vibrate([120,60,120]); }catch(e){} }
+    toast(title + (body ? ' — ' + body : ''), 4200);
     if('Notification' in window && Notification.permission === 'granted'){
       try{ new Notification(title, {body: body, icon: 'icon-192.png'}); }catch(e){}
     }
@@ -1043,6 +1108,15 @@
   }
 
   /* ---------------- boot ---------------- */
+  function primeAudio(){
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+    }catch(e){}
+    document.removeEventListener('pointerdown', primeAudio);
+  }
+  document.addEventListener('pointerdown', primeAudio);
+
   updatePermUI();
   renderAll();
   setInterval(renderAll, 60000);

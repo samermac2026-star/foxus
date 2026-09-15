@@ -184,6 +184,35 @@
     padding:8px 14px;border-radius:999px;white-space:nowrap;
   }
 
+  /* ---------- planner cta ---------- */
+  .planner-cta{
+    width:100%;display:flex;align-items:center;gap:12px;text-align:right;
+    background:linear-gradient(135deg,#7B4FE0 0%,#A472F0 100%);color:#fff;
+    border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);
+  }
+  .planner-cta .emoji{font-size:24px;flex:none;}
+  .planner-cta .txt{flex:1;}
+  .planner-cta .txt b{display:block;font-size:15px;}
+  .planner-cta .txt small{display:block;font-weight:500;opacity:.9;font-size:12px;margin-top:2px;}
+
+  .plan-card{
+    background:var(--card);border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);
+    padding:14px;margin-bottom:14px;
+  }
+  .plan-card .plan-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .plan-card .plan-head .n{font-weight:800;font-size:15px;}
+  .timeline{display:flex;flex-direction:column;gap:0;}
+  .tl-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);}
+  .tl-row:last-child{border-bottom:none;}
+  .tl-time{flex:none;width:48px;font-size:12px;font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums;padding-top:1px;}
+  .tl-body{flex:1;font-size:13.5px;}
+  .tl-body .tl-title{font-weight:700;}
+  .tl-body .tl-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px;}
+  .tl-row.wake .tl-body,.tl-row.sleep .tl-body{color:var(--ink-soft);font-weight:600;}
+  .tl-row.break .tl-body{color:var(--ink-soft);}
+  .tl-row.overflow .tl-title{color:var(--danger);}
+  .tl-dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:6px;}
+
   /* ---------- section ---------- */
   .section{padding:18px 16px 4px;}
   .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;}
@@ -363,6 +392,14 @@
 
 <div class="wrap" style="max-width:640px;padding:0;">
   <div class="stats" id="stats"></div>
+
+  <div class="section" style="padding-bottom:0;">
+    <button class="planner-cta" id="openPlannerBtn">
+      <span class="emoji">✨</span>
+      <span class="txt"><b>خطط يومي</b><small>اكتب مهامك اليوم وخلّ Foxus يرتب لك جدول كامل</small></span>
+    </button>
+  </div>
+
   <div id="nudgeSlot"></div>
 
   <div class="section">
@@ -407,7 +444,7 @@
   <div class="backdrop" data-close="addOverlay"></div>
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h3>مهمة جديدة</h3>
+    <h3 id="taskFormTitle">مهمة جديدة</h3>
     <form id="taskForm">
       <div class="field">
         <label>عنوان المهمة</label>
@@ -416,6 +453,10 @@
       <div class="field">
         <label>الفئة</label>
         <div class="cats" id="fCats"></div>
+      </div>
+      <div class="field">
+        <label>الأولوية</label>
+        <div class="cats" id="fPriority"></div>
       </div>
       <div class="field-row">
         <div class="field">
@@ -427,24 +468,57 @@
           <input type="time" id="fTime">
         </div>
       </div>
-      <div class="field-row">
-        <div class="field">
-          <label>المدة المتوقعة (دقيقة)</label>
-          <input type="number" id="fMinutes" min="1" placeholder="مثال: 30">
+      <div class="field">
+        <label>المدة المتوقعة (دقيقة)</label>
+        <input type="number" id="fMinutes" min="1" placeholder="مثال: 30">
+      </div>
+      <div class="field">
+        <label>تكرار المهمة</label>
+        <div class="cats" id="fRecurrence">
+          <button type="button" class="cat-pick" data-recur="none">لا تتكرر</button>
+          <button type="button" class="cat-pick" data-recur="daily">يوميًا</button>
+          <button type="button" class="cat-pick" data-recur="custom_days">أيام محددة</button>
+          <button type="button" class="cat-pick" data-recur="weekly">أسبوعيًا</button>
+          <button type="button" class="cat-pick" data-recur="biweekly">كل أسبوعين</button>
+          <button type="button" class="cat-pick" data-recur="monthly">شهريًا</button>
+          <button type="button" class="cat-pick" data-recur="every_x">كل عدة أيام</button>
         </div>
-        <div class="field" style="display:flex;align-items:flex-end;">
-          <div class="toggle-row" style="width:100%;">
-            <span style="font-size:13px;font-weight:700;color:var(--ink-soft);">⭐ مهمة عاجلة</span>
-            <div class="switch" id="fImportant"><i></i></div>
-          </div>
+        <div class="cats" id="fRecurDaysRow" style="margin-top:8px;display:none;"></div>
+        <div class="field-row" id="fRecurEveryXRow" style="margin-top:8px;display:none;">
+          <input type="number" id="fRecurInterval" min="2" placeholder="كل كم يوم؟ مثال: 3">
+        </div>
+        <div class="field-row" id="fRecurMonthRow" style="margin-top:8px;display:none;">
+          <input type="number" id="fRecurDayOfMonth" min="1" max="31" placeholder="يوم الشهر (1-31)">
         </div>
       </div>
       <div class="field">
         <label>ملاحظات (اختياري)</label>
         <textarea id="fNotes" placeholder="أي تفاصيل إضافية..."></textarea>
       </div>
-      <button type="submit" class="primary-btn">إضافة المهمة</button>
+      <button type="submit" class="primary-btn" id="taskFormSubmit">إضافة المهمة</button>
+      <button type="button" class="ghost-btn danger-btn" id="deleteTaskBtn" style="display:none;">حذف المهمة</button>
     </form>
+  </div>
+</div>
+
+<!-- Day Planner Sheet -->
+<div class="overlay" id="plannerOverlay">
+  <div class="backdrop" data-close="plannerOverlay"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>✨ خطط يومي</h3>
+    <div id="plannerInputView">
+      <div class="field">
+        <label>وش تبي تنجز اليوم؟</label>
+        <textarea id="plannerInput" placeholder="مثال: اليوم عندي النادي ساعتين، أخلص شغل العمل 3 ساعات، أروح أشتري أغراض، أقرأ نصف ساعة، وعندي موعد الساعة 7" style="min-height:100px;"></textarea>
+      </div>
+      <button class="primary-btn" id="generatePlansBtn">✨ خطط يومي</button>
+    </div>
+    <div id="plannerResultsView" style="display:none;">
+      <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 14px;">وجدت أفضل 3 طرق لتنظيم يومك 🦊</p>
+      <div id="plansContainer"></div>
+      <button class="ghost-btn" id="plannerBackBtn">🔄 أعد التحليل</button>
+    </div>
   </div>
 </div>
 
@@ -496,6 +570,28 @@
       </div>
     </div>
 
+    <div class="settings-item" style="display:block;">
+      <div class="t" style="margin-bottom:10px;">
+        <div class="n">⏱️ ساعاتك اليومية</div>
+        <div class="d">يستخدمها "خطط يومي" عشان يوزع مهامك بشكل واقعي</div>
+      </div>
+      <div class="field-row" style="margin-top:10px;">
+        <div class="field" style="margin-bottom:0;"><label>الاستيقاظ</label><input type="time" id="pWake"></div>
+        <div class="field" style="margin-bottom:0;"><label>النوم</label><input type="time" id="pSleep"></div>
+      </div>
+      <div class="field-row" style="margin-top:10px;">
+        <div class="field" style="margin-bottom:0;"><label>بداية الدوام</label><input type="time" id="pWorkStart"></div>
+        <div class="field" style="margin-bottom:0;"><label>نهاية الدوام</label><input type="time" id="pWorkEnd"></div>
+      </div>
+    </div>
+
+    <div class="settings-item" id="recurringListItem" style="display:none;">
+      <div class="t" style="width:100%;">
+        <div class="n" style="margin-bottom:8px;">🔁 المهام المتكررة</div>
+        <div id="recurringList"></div>
+      </div>
+    </div>
+
     <button class="ghost-btn danger-btn" id="resetBtn">إعادة تعيين كل البيانات</button>
   </div>
 </div>
@@ -539,21 +635,47 @@
   };
   var CAT_KEYS = Object.keys(CATS);
 
+  var PRIORITIES = {
+    urgent:{label:'عاجلة', color:'#D64545', tint:'#FBE2E0', weight:4, boost:18},
+    high:{label:'عالية', color:'#C9820F', tint:'#FBEED2', weight:3, boost:10},
+    medium:{label:'متوسطة', color:'#2F6FED', tint:'#E4ECFD', weight:2, boost:0},
+    low:{label:'منخفضة', color:'#6B5142', tint:'#EFE7DF', weight:1, boost:-6}
+  };
+  var PRIORITY_KEYS = ['urgent','high','medium','low'];
+  function isImportantPriority(p){ return p === 'urgent' || p === 'high'; }
+
   var STORE_KEY = 'foxus_v1';
 
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
   function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
   function todayStr(ts){ var d = new Date(ts); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function dateOnly(ts){ var d = new Date(ts); d.setHours(0,0,0,0); return d.getTime(); }
+  function timeStrToTodayTs(hhmm, base){
+    var parts = (hhmm||'00:00').split(':');
+    var d = base ? new Date(base) : new Date();
+    d.setHours(+parts[0]||0, +parts[1]||0, 0, 0);
+    return d.getTime();
+  }
+  function fmtHHMM(ts){
+    var d = new Date(ts);
+    return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+  function localDateStr(ts){
+    var d = new Date(ts);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
 
   function defaultState(){
     return {
       tasks: [],
+      recurringTemplates: [],
       weights: {
         procrastination: {work:1,study:1,personal:1,health:1,other:1},
         productiveHours: new Array(24).fill(1)
       },
       stats: { streakDays:0, lastCompletionDate:null, totalCompleted:0, totalOnTime:0, totalLate:0 },
       settings: { reminderLead:30, lastNudgeDate:null, onboarded:false, theme:'auto' },
+      profile: { wake:'07:00', sleep:'23:00', workStart:'09:00', workEnd:'17:00' },
       notified: {}
     };
   }
@@ -565,11 +687,19 @@
       if(!raw) return defaultState();
       var parsed = JSON.parse(raw);
       var d = defaultState();
-      return Object.assign(d, parsed, {
+      var merged = Object.assign(d, parsed, {
         weights: Object.assign(d.weights, parsed.weights),
         stats: Object.assign(d.stats, parsed.stats),
-        settings: Object.assign(d.settings, parsed.settings)
+        settings: Object.assign(d.settings, parsed.settings),
+        profile: Object.assign(d.profile, parsed.profile),
+        recurringTemplates: parsed.recurringTemplates || []
       });
+      merged.tasks.forEach(function(t){
+        if(!t.priority) t.priority = t.important ? 'high' : 'medium';
+        if(t.recurringId === undefined) t.recurringId = null;
+        if(t.planId === undefined) t.planId = null;
+      });
+      return merged;
     }catch(e){ return defaultState(); }
   }
   function save(){
@@ -588,7 +718,8 @@
     } else {
       urgency = 8;
     }
-    var importanceBonus = task.important ? 15 : 0;
+    var pr = PRIORITIES[task.priority] || PRIORITIES.medium;
+    var importanceBonus = pr.boost;
     var hour = new Date(task.due || task.createdAt).getHours();
     var hourFactor = state.weights.productiveHours[hour] || 1;
     return urgency*bias + importanceBonus + (hourFactor-1)*2;
@@ -639,6 +770,37 @@
     task.notifiedAt = null;
   }
 
+  function overlapsRange(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && bStart < aEnd; }
+
+  function findNextFreeSlot(durationMin, afterTs, excludeId){
+    var obstacles = state.tasks.filter(function(t){
+      return t.status === 'active' && t.due && t.id !== excludeId;
+    }).map(function(t){ return {start:t.due, end:t.due + (t.estMinutes||30)*60000}; });
+    var needMs = durationMin*60000;
+    var cursor = afterTs;
+    var sleepToday = timeStrToTodayTs(state.profile.sleep, afterTs);
+    for(var i=0;i<200;i++){
+      var end = cursor + needMs;
+      if(end > sleepToday) break;
+      if(!obstacles.some(function(o){ return overlapsRange(cursor,end,o.start,o.end); })) return cursor;
+      cursor += 15*60000;
+    }
+    var tomorrowSameTime = timeStrToTodayTs(fmtHHMM(afterTs), afterTs + 86400000);
+    return tomorrowSameTime;
+  }
+
+  function rescheduleTask(task){
+    var duration = task.estMinutes || 30;
+    var from = Math.max(Date.now() + 15*60000, (task.due||0));
+    var slot = findNextFreeSlot(duration, from, task.id);
+    task.due = slot;
+    task.notifiedAt = null;
+    save();
+    renderAll();
+    var sameDay = todayStr(slot) === todayStr(Date.now());
+    toast(sameDay ? ('🔁 نقلتها إلى الساعة ' + fmtHHMM(slot)) : '🔁 ما فيه وقت فاضي اليوم، نقلتها لبكرة بنفس الوقت');
+  }
+
   function bestProductiveHourLabel(){
     var ph = state.weights.productiveHours;
     var best = 0;
@@ -647,6 +809,241 @@
     var period = best < 12 ? 'ص' : 'م';
     var h12 = best % 12 === 0 ? 12 : best % 12;
     return h12 + ':00 ' + period;
+  }
+
+  /* ---------------- recurrence engine ---------------- */
+  var RECUR_LABELS = {
+    none:'لا تتكرر', daily:'يوميًا', custom_days:'أيام محددة',
+    weekly:'أسبوعيًا', biweekly:'كل أسبوعين', monthly:'شهريًا', every_x:'كل عدة أيام'
+  };
+  var WEEKDAY_LABELS = ['أحد','اثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
+
+  function ruleMatchesDate(tpl, dateTs){
+    var rule = tpl.rule || {type:'none'};
+    if(rule.type === 'none') return false;
+    var start = dateOnly(tpl.startDate || tpl.createdAt || dateTs);
+    var day0 = dateOnly(dateTs);
+    if(day0 < start) return false;
+    var daysSince = Math.round((day0 - start) / 86400000);
+    var dow = new Date(day0).getDay();
+    switch(rule.type){
+      case 'daily': return true;
+      case 'custom_days': return (rule.days||[]).indexOf(dow) !== -1;
+      case 'weekly': return dow === new Date(start).getDay();
+      case 'biweekly': return daysSince % 14 === 0;
+      case 'every_x': return daysSince % Math.max(1, rule.interval||1) === 0;
+      case 'monthly': return new Date(day0).getDate() === (rule.dayOfMonth || new Date(start).getDate());
+      default: return false;
+    }
+  }
+
+  function recurrenceSummary(rule){
+    if(!rule || rule.type === 'none') return RECUR_LABELS.none;
+    if(rule.type === 'custom_days') return (rule.days||[]).map(function(d){ return WEEKDAY_LABELS[d]; }).join('، ') || RECUR_LABELS.custom_days;
+    if(rule.type === 'every_x') return 'كل ' + (rule.interval||2) + ' أيام';
+    if(rule.type === 'monthly') return 'يوم ' + (rule.dayOfMonth||1) + ' من كل شهر';
+    return RECUR_LABELS[rule.type] || '';
+  }
+
+  function materializeRecurring(){
+    var now = Date.now();
+    var todayKey = todayStr(now);
+    var changed = false;
+    state.recurringTemplates.forEach(function(tpl){
+      if(!tpl.active) return;
+      if(!ruleMatchesDate(tpl, now)) return;
+      var exists = state.tasks.some(function(t){ return t.recurringId === tpl.id && todayStr(t.createdAt) === todayKey; });
+      if(exists) return;
+      var due = tpl.time ? timeStrToTodayTs(tpl.time, now) : null;
+      state.tasks.push({
+        id: uid(), title: tpl.title, category: tpl.category, due: due,
+        estMinutes: tpl.estMinutes || null, priority: tpl.priority || 'medium',
+        important: isImportantPriority(tpl.priority || 'medium'), notes: tpl.notes || '',
+        createdAt: now, completedAt: null, notifiedAt: null, snoozeCount: 0,
+        status: 'active', recurringId: tpl.id, planId: null
+      });
+      changed = true;
+    });
+    if(changed) save();
+  }
+
+  /* ---------------- day planner: local NLP + scheduler ---------------- */
+  var AR_NUM_WORDS = {'واحد':1,'واحدة':1,'اثنين':2,'اثنتين':2,'ثنتين':2,'ثلاث':3,'ثلاثة':3,'اربع':4,'أربع':4,'اربعة':4,'أربعة':4,'خمس':5,'خمسة':5,'ست':6,'ستة':6,'سبع':7,'سبعة':7,'ثمان':8,'ثمانية':8,'تسع':9,'تسعة':9,'عشر':10,'عشرة':10};
+
+  function extractDurationMin(text){
+    if(/نص\s*ساعة|نصف\s*ساعة/.test(text)) return 30;
+    if(/ساعة\s*ونص|ساعة\s*ونصف/.test(text)) return 90;
+    if(/ساعتين/.test(text)) return 120;
+    var mHours = text.match(/(\d+)\s*ساع/);
+    if(mHours) return (+mHours[1]) * 60;
+    var wHours = text.match(/(ثلاث|اربع|أربع|خمس|ست|سبع|ثمان|تسع|عشر)[ة]?\s*ساع/);
+    if(wHours){ var w = wHours[1].replace('ة',''); for(var k in AR_NUM_WORDS){ if(k.indexOf(w)===0 || w.indexOf(k)===0) return AR_NUM_WORDS[k]*60; } }
+    if(/ساعة/.test(text)) return 60;
+    var mMin = text.match(/(\d+)\s*دقيق/);
+    if(mMin) return +mMin[1];
+    return null;
+  }
+
+  function extractFixedTime(text){
+    var m = text.match(/الساعة\s*(\d{1,2})(?::(\d{2}))?/) || text.match(/\b(\d{1,2}):(\d{2})\b/);
+    if(!m) return null;
+    var h = +m[1], min = +(m[2]||0);
+    var isPM = /مساء|عصر|مغرب|بعد الظهر|م\b/.test(text);
+    var isAM = /صباح|فجر|ص\b/.test(text);
+    if(!isPM && !isAM){
+      if(h >= 1 && h <= 11) isPM = true;
+      else if(h === 12) isPM = true;
+    }
+    if(isPM && h < 12) h += 12;
+    if(isAM && h === 12) h = 0;
+    return {h: h, m: min};
+  }
+
+  function guessCategory(text){
+    if(/نادي|رياضه|رياضة|جيم|مشي|تمرين/.test(text)) return 'health';
+    if(/شغل|عمل|تقرير|اجتماع|ايميل|إيميل|مشروع|عرض/.test(text)) return 'work';
+    if(/قراءة|اقرا|أقرأ|دراسة|مذاكرة|كورس|مراجعة/.test(text)) return 'study';
+    if(/شراء|تسوق|أغراض|اغراض|بيت|غسيل|طبخ/.test(text)) return 'personal';
+    return 'other';
+  }
+
+  function guessPriority(text){
+    if(/عاجل|ضروري جدا|ضروري جدًا|أهم شي|اهم شي/.test(text)) return 'urgent';
+    if(/مهم|لازم|ضروري/.test(text)) return 'high';
+    if(/لو قدرت|لو فضل وقت|ممكن|إذا سمح الوقت|اذا سمح الوقت/.test(text)) return 'low';
+    return 'medium';
+  }
+
+  function cleanTitle(text, timeMatch){
+    var t = text
+      .replace(/الساعة\s*\d{1,2}(:\d{2})?/g, '')
+      .replace(/\d{1,2}:\d{2}/g, '')
+      .replace(/(نص|نصف)\s*ساعة/g, '')
+      .replace(/ساعة\s*ونص[ف]?/g, '')
+      .replace(/ساعتين/g, '')
+      .replace(/\d+\s*ساع(ة|ات)?/g, '')
+      .replace(/(ثلاث|اربع|أربع|خمس|ست|سبع|ثمان|تسع|عشر)[ة]?\s*ساع(ة|ات)?/g, '')
+      .replace(/ساع(ة|ات)?/g, '')
+      .replace(/\d+\s*دقيق(ة|ه|ه|ائق)?/g, '')
+      .replace(/(مساء|صباح|عصر|مغرب|فجر)(ًا|اً|ا)?/g, '')
+      .replace(/بعد\s*الظهر/g, '')
+      .replace(/لمدة/g, '')
+      .replace(/^\s*(?:(?:اليوم|عندي|عندى|أروح|اروح|بعدين|وبعدين|وبعده|كمان|كذلك|أيضا|ايضا|بغيت|أبغى|ابغى|بدي|حاب|حابب)\s+)+/,'')
+      .replace(/\s{2,}/g,' ')
+      .replace(/\s+([.,،])/g, '$1')
+      .trim();
+    return t || text.trim();
+  }
+
+  function splitTasksText(text){
+    var chunks = text.split(/[،,؛\n]+/);
+    var out = [];
+    chunks.forEach(function(c){
+      c.split(/\sو(?=[أإآابتثجحخدذرزسشصضطظعغفقكلمنهوي])/).forEach(function(p){
+        p = p.trim();
+        if(p) out.push(p);
+      });
+    });
+    return out.filter(function(s){ return s.length > 1; });
+  }
+
+  function parsePlanInput(text){
+    return splitTasksText(text).map(function(chunk){
+      var duration = extractDurationMin(chunk);
+      var fixed = extractFixedTime(chunk);
+      return {
+        title: cleanTitle(chunk),
+        estMinutes: duration || (fixed ? 30 : 25),
+        category: guessCategory(chunk),
+        priority: guessPriority(chunk),
+        fixedHour: fixed ? fixed.h : null,
+        fixedMinute: fixed ? fixed.m : 0,
+        focus: /شغل|عمل|تقرير|قراءة|دراسة|مذاكرة|مشروع/.test(chunk)
+      };
+    });
+  }
+
+  function overlaps(aStart,aEnd,bStart,bEnd){ return aStart < bEnd && bStart < aEnd; }
+
+  function buildPlan(items, opts){
+    var now = new Date();
+    var wake = timeStrToTodayTs(state.profile.wake, now);
+    var sleep = timeStrToTodayTs(state.profile.sleep, now);
+    var dayStart = Math.max(wake, now.getTime());
+    var blocks = [];
+
+    var existingToday = state.tasks.filter(function(t){
+      return t.status === 'active' && t.due && todayStr(t.due) === todayStr(now.getTime());
+    }).map(function(t){
+      var s = t.due, e = s + (t.estMinutes||30)*60000;
+      return {start:s, end:e, label:t.title, type:'fixed', existing:true};
+    });
+    blocks = blocks.concat(existingToday);
+
+    var fixedItems = items.filter(function(it){ return it.fixedHour !== null; });
+    var flexItems = items.filter(function(it){ return it.fixedHour === null; });
+
+    fixedItems.forEach(function(it){
+      var start = timeStrToTodayTs(String(it.fixedHour).padStart(2,'0')+':'+String(it.fixedMinute).padStart(2,'0'), now);
+      var end = start + it.estMinutes*60000;
+      var tries = 0;
+      while(blocks.some(function(b){ return overlaps(start,end,b.start,b.end); }) && tries < 48){
+        start += 15*60000; end = start + it.estMinutes*60000; tries++;
+      }
+      blocks.push({start:start, end:end, label:it.title, type:'task', category:it.category, priority:it.priority, estMinutes:it.estMinutes});
+    });
+
+    flexItems.sort(function(a,b){
+      if(opts.order === 'priority') return (PRIORITIES[b.priority].weight - PRIORITIES[a.priority].weight) || (b.focus - a.focus);
+      return 0;
+    });
+
+    var overflow = [];
+    flexItems.forEach(function(it){
+      blocks.sort(function(a,b){ return a.start - b.start; });
+      var cursor = dayStart;
+      var placed = false;
+      for(var i=0; i<=blocks.length; i++){
+        var gapEnd = i < blocks.length ? blocks[i].start : sleep;
+        var gapStart = Math.max(cursor, i === 0 ? dayStart : blocks[i-1].end + opts.breakMin*60000);
+        if(i > 0) gapStart = Math.max(gapStart, blocks[i-1].end + opts.breakMin*60000);
+        var need = it.estMinutes*60000;
+        if(gapEnd - gapStart >= need){
+          var start = gapStart, end = start + need;
+          blocks.push({start:start, end:end, label:it.title, type:'task', category:it.category, priority:it.priority, estMinutes:it.estMinutes});
+          placed = true;
+          break;
+        }
+        cursor = gapEnd;
+      }
+      if(!placed) overflow.push(it);
+    });
+
+    blocks.sort(function(a,b){ return a.start - b.start; });
+    var timeline = [{time: fmtHHMM(wake), type:'wake', label:'الاستيقاظ'}];
+    blocks.forEach(function(b, i){
+      if(i > 0){
+        var gap = Math.round((b.start - blocks[i-1].end)/60000);
+        if(gap >= 60) timeline.push({time: fmtHHMM(blocks[i-1].end), type:'break', label:'وقت حر', estMinutes:gap});
+        else if(gap >= 10) timeline.push({time: fmtHHMM(blocks[i-1].end), type:'break', label:'استراحة', estMinutes:gap});
+      }
+      timeline.push({time: fmtHHMM(b.start), type: b.existing ? 'existing' : 'task', label:b.label, estMinutes: Math.round((b.end-b.start)/60000), category:b.category, priority:b.priority, _start:b.start, _cat:b.category, _pr:b.priority, _est: b.estMinutes});
+    });
+    overflow.forEach(function(it){
+      timeline.push({time:'--:--', type:'overflow', label:it.title, estMinutes:it.estMinutes, category:it.category, priority:it.priority, _cat:it.category, _pr:it.priority, _est:it.estMinutes});
+    });
+    timeline.push({time: fmtHHMM(sleep), type:'sleep', label:'النوم'});
+    return timeline;
+  }
+
+  function generateDayPlans(text){
+    var items = parsePlanInput(text);
+    if(!items.length) return null;
+    return [
+      {key:'balanced', label:'متوازنة', emoji:'⭐', timeline: buildPlan(items, {breakMin:12, order:'none'})},
+      {key:'productive', label:'إنجاز', emoji:'🚀', timeline: buildPlan(items, {breakMin:5, order:'priority'})},
+      {key:'relaxed', label:'مريحة', emoji:'🌿', timeline: buildPlan(items, {breakMin:25, order:'none'})}
+    ];
   }
 
   /* ---------------- rendering helpers ---------------- */
@@ -681,10 +1078,12 @@
 
   function taskCard(task, now, done){
     var cat = CATS[task.category] || CATS.other;
+    var pr = PRIORITIES[task.priority] || PRIORITIES.medium;
     var due = dueLabel(task.due, now);
     var chips = '<span class="chip cat" style="background:' + cat.tint + ';color:' + cat.color + '">' + cat.label + '</span>';
     if(due) chips += '<span class="chip ' + due.cls + '">' + due.text + '</span>';
-    if(task.important) chips += '<span class="chip star">⭐ عاجلة</span>';
+    if(task.priority && task.priority !== 'medium') chips += '<span class="chip" style="background:' + pr.tint + ';color:' + pr.color + '">' + (task.priority==='urgent'||task.priority==='high' ? '⭐ ' : '') + pr.label + '</span>';
+    if(task.recurringId) chips += '<span class="chip muted">🔁 متكررة</span>';
     if(!done) reasonChips(task, now).forEach(function(c){ chips += '<span class="chip ' + c.cls + '">' + c.text + '</span>'; });
     if(task.estMinutes) chips += '<span class="chip muted">~' + task.estMinutes + ' د</span>';
 
@@ -695,6 +1094,9 @@
       actions =
         '<button data-action="star" data-id="' + task.id + '" class="' + (task.important?'star-on':'') + '" aria-label="مهم">' +
           '<svg width="17" height="17" viewBox="0 0 24 24" fill="' + (task.important?'currentColor':'none') + '"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>' +
+        '</button>' +
+        '<button data-action="reschedule" data-id="' + task.id + '" aria-label="إعادة جدولة">' +
+          '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 3 6.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3 17v-4h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
         '</button>' +
         '<button data-action="snooze" data-id="' + task.id + '" aria-label="تأجيل">' +
           '<svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 9v4l2.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M9 2h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
@@ -709,7 +1111,7 @@
         '<button class="check' + (done?' on':'') + '" data-action="toggle" data-id="' + task.id + '" aria-label="إنجاز">' +
           (done ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') +
         '</button>' +
-        '<div class="task-body">' +
+        '<div class="task-body"' + (done ? '' : ' data-action="edit" data-id="' + task.id + '"') + '>' +
           '<div class="task-top"><div class="title">' + escapeHtml(task.title) + '</div></div>' +
           '<div class="task-meta">' + chips + '</div>' +
         '</div>' +
@@ -799,6 +1201,7 @@
   }
 
   function renderAll(){
+    materializeRecurring();
     renderStats();
     renderNudge();
     renderList();
@@ -827,9 +1230,11 @@
     el.addEventListener('click', function(){ closeOverlay(el.getAttribute('data-close')); });
   });
 
-  /* ---------------- add task form ---------------- */
+  /* ---------------- add/edit task form ---------------- */
   var selectedCat = 'work';
-  var isImportant = false;
+  var selectedPriority = 'medium';
+  var selectedRecurrence = {type:'none', days:[], interval:2, dayOfMonth:1};
+  var editingTaskId = null;
 
   function buildCatPicker(container, onPick, initial){
     container.innerHTML = CAT_KEYS.map(function(k){
@@ -852,12 +1257,126 @@
   }
   buildCatPicker(document.getElementById('fCats'), function(k){ selectedCat = k; }, selectedCat);
 
-  document.getElementById('fImportant').addEventListener('click', function(){
-    isImportant = !isImportant;
-    this.classList.toggle('on', isImportant);
-  });
+  function buildPriorityPicker(initial){
+    var container = document.getElementById('fPriority');
+    container.innerHTML = PRIORITY_KEYS.map(function(k){
+      var p = PRIORITIES[k];
+      var active = k === initial;
+      return '<button type="button" class="cat-pick' + (active?' active':'') + '" data-pr="' + k + '" style="' + (active ? ('background:'+p.color+';border-color:'+p.color) : '') + '">' + p.label + '</button>';
+    }).join('');
+    container.querySelectorAll('.cat-pick').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        container.querySelectorAll('.cat-pick').forEach(function(b){
+          b.classList.remove('active'); b.style.background=''; b.style.borderColor='';
+        });
+        var k = btn.getAttribute('data-pr');
+        btn.classList.add('active');
+        btn.style.background = PRIORITIES[k].color;
+        btn.style.borderColor = PRIORITIES[k].color;
+        selectedPriority = k;
+      });
+    });
+  }
+  buildPriorityPicker(selectedPriority);
 
-  document.getElementById('fabAdd').addEventListener('click', function(){ openOverlay('addOverlay'); });
+  function buildRecurDaysRow(){
+    var row = document.getElementById('fRecurDaysRow');
+    row.innerHTML = WEEKDAY_LABELS.map(function(lbl, i){
+      var active = selectedRecurrence.days.indexOf(i) !== -1;
+      return '<button type="button" class="cat-pick' + (active?' active':'') + '" data-day="' + i + '" style="' + (active?'background:var(--brand);border-color:var(--brand)':'') + '">' + lbl + '</button>';
+    }).join('');
+    row.querySelectorAll('.cat-pick').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var d = +btn.getAttribute('data-day');
+        var idx = selectedRecurrence.days.indexOf(d);
+        if(idx === -1) selectedRecurrence.days.push(d); else selectedRecurrence.days.splice(idx,1);
+        btn.classList.toggle('active');
+        btn.style.background = btn.classList.contains('active') ? 'var(--brand)' : '';
+        btn.style.borderColor = btn.classList.contains('active') ? 'var(--brand)' : '';
+      });
+    });
+  }
+
+  function updateRecurSubRows(){
+    document.getElementById('fRecurDaysRow').style.display = selectedRecurrence.type === 'custom_days' ? 'flex' : 'none';
+    document.getElementById('fRecurEveryXRow').style.display = selectedRecurrence.type === 'every_x' ? 'flex' : 'none';
+    document.getElementById('fRecurMonthRow').style.display = selectedRecurrence.type === 'monthly' ? 'flex' : 'none';
+  }
+
+  function buildRecurrencePicker(initialType){
+    selectedRecurrence.type = initialType || 'none';
+    var container = document.getElementById('fRecurrence');
+    container.querySelectorAll('.cat-pick').forEach(function(btn){
+      var t = btn.getAttribute('data-recur');
+      var active = t === selectedRecurrence.type;
+      btn.classList.toggle('active', active);
+      btn.style.background = active ? 'var(--brand)' : '';
+      btn.style.borderColor = active ? 'var(--brand)' : '';
+      btn.onclick = function(){
+        container.querySelectorAll('.cat-pick').forEach(function(b){ b.classList.remove('active'); b.style.background=''; b.style.borderColor=''; });
+        btn.classList.add('active'); btn.style.background='var(--brand)'; btn.style.borderColor='var(--brand)';
+        selectedRecurrence.type = t;
+        updateRecurSubRows();
+      };
+    });
+    buildRecurDaysRow();
+    updateRecurSubRows();
+  }
+  buildRecurrencePicker('none');
+
+  function setRecurrenceLockedUI(locked){
+    var wrap = document.getElementById('fRecurrence').closest('.field');
+    wrap.style.display = locked ? 'none' : '';
+  }
+
+  function resetTaskForm(){
+    document.getElementById('taskForm').reset();
+    editingTaskId = null;
+    document.getElementById('taskFormTitle').textContent = 'مهمة جديدة';
+    document.getElementById('taskFormSubmit').textContent = 'إضافة المهمة';
+    document.getElementById('deleteTaskBtn').style.display = 'none';
+    selectedCat = 'work';
+    buildCatPicker(document.getElementById('fCats'), function(k){ selectedCat = k; }, 'work');
+    selectedPriority = 'medium';
+    buildPriorityPicker('medium');
+    selectedRecurrence = {type:'none', days:[], interval:2, dayOfMonth:1};
+    buildRecurrencePicker('none');
+    setRecurrenceLockedUI(false);
+  }
+
+  function openTaskFormForEdit(task){
+    editingTaskId = task.id;
+    document.getElementById('taskFormTitle').textContent = 'تعديل المهمة';
+    document.getElementById('taskFormSubmit').textContent = 'حفظ التعديلات';
+    document.getElementById('deleteTaskBtn').style.display = '';
+    document.getElementById('fTitle').value = task.title;
+    selectedCat = task.category;
+    buildCatPicker(document.getElementById('fCats'), function(k){ selectedCat = k; }, task.category);
+    selectedPriority = task.priority || 'medium';
+    buildPriorityPicker(selectedPriority);
+    if(task.due){
+      document.getElementById('fDate').value = localDateStr(task.due);
+      document.getElementById('fTime').value = fmtHHMM(task.due);
+    }
+    document.getElementById('fMinutes').value = task.estMinutes || '';
+    document.getElementById('fNotes').value = task.notes || '';
+    selectedRecurrence = {type:'none', days:[], interval:2, dayOfMonth:1};
+    buildRecurrencePicker('none');
+    setRecurrenceLockedUI(!!task.recurringId);
+    openOverlay('addOverlay');
+  }
+
+  document.getElementById('fabAdd').addEventListener('click', function(){ resetTaskForm(); openOverlay('addOverlay'); });
+
+  document.getElementById('deleteTaskBtn').addEventListener('click', function(){
+    if(!editingTaskId) return;
+    if(confirm('حذف هذي المهمة نهائيًا؟')){
+      state.tasks = state.tasks.filter(function(t){ return t.id !== editingTaskId; });
+      closeOverlay('addOverlay');
+      renderAll();
+      toast('تم حذف المهمة');
+    }
+  });
 
   var CHEERS = [
     'يلا! خطوة وحدة بس وتخلص 💪',
@@ -887,31 +1406,53 @@
       due = candidate.getTime();
     }
     var minutes = parseInt(document.getElementById('fMinutes').value, 10);
+    var notes = document.getElementById('fNotes').value.trim();
+    var priority = selectedPriority;
+    var important = isImportantPriority(priority);
 
-    state.tasks.push({
-      id: uid(),
-      title: title,
-      category: selectedCat,
-      due: due,
-      estMinutes: isNaN(minutes) ? null : minutes,
-      important: isImportant,
-      notes: document.getElementById('fNotes').value.trim(),
-      createdAt: Date.now(),
-      completedAt: null,
-      notifiedAt: null,
-      snoozeCount: 0,
-      status: 'active'
-    });
+    function buildTemplate(){
+      var rule = {type: selectedRecurrence.type};
+      if(rule.type === 'custom_days') rule.days = selectedRecurrence.days.slice();
+      if(rule.type === 'every_x') rule.interval = parseInt(document.getElementById('fRecurInterval').value,10) || 2;
+      if(rule.type === 'monthly') rule.dayOfMonth = parseInt(document.getElementById('fRecurDayOfMonth').value,10) || new Date().getDate();
+      return {
+        id: uid(), title: title, category: selectedCat,
+        estMinutes: isNaN(minutes) ? null : minutes, priority: priority,
+        time: timeVal || null, notes: notes, rule: rule, startDate: Date.now(), active: true
+      };
+    }
 
-    this.reset();
-    isImportant = false;
-    document.getElementById('fImportant').classList.remove('on');
-    buildCatPicker(document.getElementById('fCats'), function(k){ selectedCat = k; }, 'work');
-    selectedCat = 'work';
+    if(editingTaskId){
+      var existing = state.tasks.find(function(x){ return x.id === editingTaskId; });
+      if(existing){
+        existing.title = title; existing.category = selectedCat; existing.due = due;
+        existing.estMinutes = isNaN(minutes) ? null : minutes; existing.priority = priority;
+        existing.important = important; existing.notes = notes;
+        if(!existing.recurringId && selectedRecurrence.type !== 'none'){
+          var tpl = buildTemplate();
+          state.recurringTemplates.push(tpl);
+          existing.recurringId = tpl.id;
+        }
+      }
+      toast('تم حفظ التعديلات');
+    } else if(selectedRecurrence.type !== 'none'){
+      var tpl2 = buildTemplate();
+      state.recurringTemplates.push(tpl2);
+      toast('تمت جدولة المهمة المتكررة');
+    } else {
+      state.tasks.push({
+        id: uid(), title: title, category: selectedCat, due: due,
+        estMinutes: isNaN(minutes) ? null : minutes, priority: priority, important: important,
+        notes: notes, createdAt: Date.now(), completedAt: null, notifiedAt: null,
+        snoozeCount: 0, status: 'active', recurringId: null, planId: null
+      });
+      toast('تمت إضافة المهمة');
+    }
 
+    resetTaskForm();
     closeOverlay('addOverlay');
     renderAll();
-    toast('تمت إضافة المهمة');
+    renderRecurringList();
   });
 
   /* ---------------- task actions ---------------- */
@@ -938,8 +1479,13 @@
       renderAll();
       toast('تم تأجيل المهمة ساعتين');
     } else if(action === 'star'){
-      task.important = !task.important;
+      task.priority = isImportantPriority(task.priority) ? 'medium' : 'high';
+      task.important = isImportantPriority(task.priority);
       renderAll();
+    } else if(action === 'reschedule'){
+      rescheduleTask(task);
+    } else if(action === 'edit'){
+      openTaskFormForEdit(task);
     } else if(action === 'delete'){
       if(confirm('حذف هذي المهمة نهائيًا؟')){
         state.tasks = state.tasks.filter(function(t){ return t.id !== id; });
@@ -992,6 +1538,50 @@
   applyTheme();
   buildThemePicker();
 
+  /* ---------------- profile hours ---------------- */
+  function fillProfileInputs(){
+    document.getElementById('pWake').value = state.profile.wake;
+    document.getElementById('pSleep').value = state.profile.sleep;
+    document.getElementById('pWorkStart').value = state.profile.workStart;
+    document.getElementById('pWorkEnd').value = state.profile.workEnd;
+  }
+  fillProfileInputs();
+  ['pWake','pSleep','pWorkStart','pWorkEnd'].forEach(function(id){
+    document.getElementById(id).addEventListener('change', function(){
+      var map = {pWake:'wake', pSleep:'sleep', pWorkStart:'workStart', pWorkEnd:'workEnd'};
+      state.profile[map[id]] = this.value;
+      save();
+    });
+  });
+
+  /* ---------------- recurring templates management ---------------- */
+  function renderRecurringList(){
+    var wrap = document.getElementById('recurringListItem');
+    var list = document.getElementById('recurringList');
+    var active = state.recurringTemplates.filter(function(t){ return t.active; });
+    if(!active.length){ wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    list.innerHTML = active.map(function(tpl){
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line);">' +
+        '<div><div style="font-weight:700;font-size:13.5px;">' + escapeHtml(tpl.title) + '</div>' +
+        '<div style="font-size:11.5px;color:var(--ink-soft);">' + recurrenceSummary(tpl.rule) + (tpl.time?(' • '+tpl.time):'') + '</div></div>' +
+        '<button data-action="delete-recur" data-id="' + tpl.id + '" style="color:var(--danger);font-size:12px;font-weight:700;">حذف</button>' +
+      '</div>';
+    }).join('');
+  }
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-action="delete-recur"]');
+    if(!btn) return;
+    var tid = btn.getAttribute('data-id');
+    if(confirm('حذف هذي المهمة المتكررة؟ (المهام السابقة ما بتنحذف)')){
+      var tpl = state.recurringTemplates.find(function(t){ return t.id === tid; });
+      if(tpl) tpl.active = false;
+      save();
+      renderRecurringList();
+      toast('تم إيقاف التكرار');
+    }
+  });
+
   document.getElementById('resetBtn').addEventListener('click', function(){
     if(confirm('هذا بيمسح كل مهامك وبيانات التعلّم. متأكد؟')){
       state = defaultState();
@@ -999,6 +1589,8 @@
       applyTheme();
       buildThemePicker();
       buildLeadPicker();
+      fillProfileInputs();
+      renderRecurringList();
       renderAll();
       closeOverlay('settingsOverlay');
       toast('تم مسح البيانات');
@@ -1090,6 +1682,99 @@
     }
   }
 
+  /* ---------------- day planner UI ---------------- */
+  var currentPlans = null;
+  var plannerAdopted = false;
+
+  document.getElementById('openPlannerBtn').addEventListener('click', function(){
+    document.getElementById('plannerInputView').style.display = '';
+    document.getElementById('plannerResultsView').style.display = 'none';
+    document.getElementById('plannerInput').value = '';
+    openOverlay('plannerOverlay');
+  });
+
+  function catLabel(k){ return (CATS[k]||CATS.other).label; }
+
+  function renderTimelineHtml(timeline){
+    return '<div class="timeline">' + timeline.map(function(row){
+      var dotColor = (row.type==='task') ? (PRIORITIES[row.priority]||PRIORITIES.medium).color : (row.type==='existing' ? 'var(--ink-soft)' : 'transparent');
+      var sub = [];
+      if(row.estMinutes) sub.push(row.estMinutes + ' د');
+      if(row.category) sub.push(catLabel(row.category));
+      return '<div class="tl-row ' + row.type + '">' +
+        '<div class="tl-time num">' + row.time + '</div>' +
+        '<div class="tl-dot" style="background:' + dotColor + '"></div>' +
+        '<div class="tl-body"><div class="tl-title">' + escapeHtml(row.label) + (row.type==='overflow' ? ' (يحتاج وقت إضافي)':'') + '</div>' +
+        (sub.length ? '<div class="tl-sub">' + sub.join(' • ') + '</div>' : '') +
+        '</div></div>';
+    }).join('') + '</div>';
+  }
+
+  function renderPlans(plans){
+    currentPlans = plans;
+    plannerAdopted = false;
+    document.getElementById('plansContainer').innerHTML = plans.map(function(p, i){
+      return '<div class="plan-card">' +
+        '<div class="plan-head"><div class="n">' + p.emoji + ' خطة ' + p.label + '</div></div>' +
+        renderTimelineHtml(p.timeline) +
+        '<button type="button" class="primary-btn" data-adopt="' + i + '">اعتماد هذه الخطة</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  document.getElementById('generatePlansBtn').addEventListener('click', function(){
+    var text = document.getElementById('plannerInput').value.trim();
+    if(!text){ toast('اكتب مهامك اليوم أول'); return; }
+    var plans = generateDayPlans(text);
+    if(!plans){ toast('ما قدرت أفهم أي مهمة من النص'); return; }
+    renderPlans(plans);
+    document.getElementById('plannerInputView').style.display = 'none';
+    document.getElementById('plannerResultsView').style.display = '';
+  });
+
+  document.getElementById('plannerBackBtn').addEventListener('click', function(){
+    document.getElementById('plannerInputView').style.display = '';
+    document.getElementById('plannerResultsView').style.display = 'none';
+  });
+
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-adopt]');
+    if(!btn || !currentPlans) return;
+    if(plannerAdopted){ toast('تم اعتماد خطة وحدة بالفعل'); return; }
+    var plan = currentPlans[+btn.getAttribute('data-adopt')];
+    var planRunId = uid();
+    var added = 0;
+    plan.timeline.forEach(function(row){
+      if(row.type === 'task' && row._start != null){
+        state.tasks.push({
+          id: uid(), title: row.label, category: row._cat || 'other', due: row._start,
+          estMinutes: row._est || null, priority: row._pr || 'medium', important: isImportantPriority(row._pr||'medium'),
+          notes: '', createdAt: Date.now(), completedAt: null, notifiedAt: null,
+          snoozeCount: 0, status: 'active', recurringId: null, planId: planRunId
+        });
+        added++;
+      } else if(row.type === 'overflow'){
+        state.tasks.push({
+          id: uid(), title: row.label, category: row._cat || 'other', due: null,
+          estMinutes: row._est || null, priority: row._pr || 'medium', important: isImportantPriority(row._pr||'medium'),
+          notes: '', createdAt: Date.now(), completedAt: null, notifiedAt: null,
+          snoozeCount: 0, status: 'active', recurringId: null, planId: planRunId
+        });
+        added++;
+      }
+    });
+    plannerAdopted = true;
+    document.querySelectorAll('[data-adopt]').forEach(function(b){
+      b.disabled = true;
+      b.textContent = (b === btn) ? '✅ تم الاعتماد' : 'خطة ثانية معتمدة';
+      b.style.opacity = (b === btn) ? 1 : .5;
+    });
+    save();
+    renderAll();
+    toast('🎉 تم اعتماد الخطة وإضافة ' + added + ' مهمة');
+    setTimeout(function(){ closeOverlay('plannerOverlay'); }, 900);
+  });
+
   /* ---------------- onboarding ---------------- */
   if(!state.settings.onboarded){
     document.getElementById('onboarding').hidden = false;
@@ -1126,6 +1811,7 @@
   document.addEventListener('pointerdown', primeAudio);
 
   updatePermUI();
+  renderRecurringList();
   renderAll();
   setInterval(renderAll, 60000);
   setInterval(checkReminders, 20000);

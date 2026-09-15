@@ -1,4 +1,4 @@
-const CACHE = "foxus-v2";
+const CACHE = "foxus-v3";
 const SHELL = [
   "./",
   "./index.html",
